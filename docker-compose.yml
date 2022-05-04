@@ -1,21 +1,32 @@
 version: '3'
 
 services:
-###> doctrine/doctrine-bundle ###
-  database:
-    image: postgres:${POSTGRES_VERSION:-13}-alpine
+  pgsql:
+    container_name: pgsql
+    image: 'postgres:14'
+    ports:
+      - '5432:5432'
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      # You should definitely change the password in production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeMe}
-      POSTGRES_USER: ${POSTGRES_USER:-symfony}
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=andrew
     volumes:
-      - db-data:/var/lib/postgresql/data:rw
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
-###< doctrine/doctrine-bundle ###
+      - pgsql-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q" ]
+      retries: 3
+      timeout: 5s
+
+  app:
+    container_name: app
+    build: .
+    volumes:
+      - ./:/var/www/html:cached
+    ports:
+      - "1337:80"
+    environment:
+      PHP_IDE_CONFIG: serverName=coolest-server
+    depends_on:
+      - pgsql
 
 volumes:
-###> doctrine/doctrine-bundle ###
-  db-data:
-###< doctrine/doctrine-bundle ###
+  pgsql-data:
